@@ -1,3 +1,7 @@
+//Spamming sounds &
+//using unoptimzed custom sounds
+//lead to floating point corruptions on Everdrive. Fix:
+
 .org 0x0C55E0 //0x800C49E0
 j FloatFix1
 nop
