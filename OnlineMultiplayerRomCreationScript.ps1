@@ -9,27 +9,6 @@ $example_version = "1.40" #VERSION EXAMPLE (ONLY RELEVANT FOR MAX LENGTH CHECK)
     
 $success_message = "Have a Hooting Time!" #SUCCESS MESSAGE OF THE SCRIPT
 
-################### 
-# ADUSTMENT CHECK #
-###################
-
-$romname_length = $romname.Length
-$version_length = $example_version.Length  
-$max_length = $romname_length + $version_length 
-
-if ($max_length -gt 20)     
-{
-    Write-Output "`nROM NAME SET TOO LONG! MAX: 20 CHARACTERS!`n" | Red
-}
-
-###############
-# ROM OFFSETS #
-###############
-
-$offsetName = 0x20 #OFFSET OF ROM NAME
-$offsetPlayer = 0xbe9160 #ONLINE PLAYER MARKER ROM OFFSET | USES EMPTY SPACE
-$offsetVersion = $offsetName + $romname.Length
-
 ##########
 # HELPER #
 ##########
@@ -43,6 +22,29 @@ function Green
 {
     process { Write-Host $_ -ForegroundColor Green }
 }
+
+################### 
+# ADUSTMENT CHECK #
+###################
+
+$romname_length = $romname.Length
+$version_length = $example_version.Length  
+$max_length = $romname_length + $version_length 
+
+if ($max_length -gt 20)     
+{
+    Write-Output "`nROM NAME SET TOO LONG! MAX: 20 CHARACTERS!`n" | Red
+    pause
+    exit
+}
+
+###############
+# ROM OFFSETS #
+###############
+
+$offsetName = 0x20 #OFFSET OF ROM NAME
+$offsetPlayer = 0xbe9160 #ONLINE PLAYER MARKER ROM OFFSET | USES EMPTY SPACE
+$offsetVersion = $offsetName + $romname.Length
 
 ########
 # CODE #
