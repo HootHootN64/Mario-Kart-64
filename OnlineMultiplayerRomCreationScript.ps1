@@ -49,9 +49,14 @@ $FileBrowser = New-Object System.Windows.Forms.OpenFileDialog -Property @{
     InitialDirectory = Get-Location 
 }
 
+$FolderBrowser = New-Object System.Windows.Forms.FolderBrowserDialog -Property @{ 
+    SelectedPath = Get-Location 
+}
+
 $patch_Path = ""
 $sourceRom_Path = ""
 $targetRom_Path = ""
+$textures_Path = ""
 
 #########
 # FUNCS #
@@ -73,14 +78,14 @@ function isTargetRomCheck
 {
     $string = ""
 
-    if ($global:file -ne $null)#($global:file.Length > 0) #$global:file != null  && 
+    if ($global:file -ne $null)
     {
         For ($i=0; $i -le $romname.Length -1; $i++) 
         {
             $string += [char]$global:file[$offsetName + $i]
         }
 
-        $romname -eq $string
+        #$romname -eq $string
 
         if ($romname -eq $string)
         {
@@ -100,6 +105,21 @@ function getTargetRomVersion
         if ([char]$global:file[$offsetVersion + $i])
         {
             $string += [char]$global:file[$offsetVersion + $i]
+        }
+    }
+
+    return $string
+}
+
+function getFullInternalRomName
+{
+    $string = ""
+
+    For ($i=0; $i -lt 21; $i++) 
+    {
+        if ([char]$global:file[$offsetName + $i])
+        {
+            $string += [char]$global:file[$offsetName + $i]
         }
     }
 
@@ -202,7 +222,6 @@ function generateMpROMS
         $FileBrowser.Filter = 'N64 ROM (*.z64)|*.z64'
         Write-Output "`nSelect $romname ROM!"
 
-        #$path = ""
         while($isTargetRom -eq 0)
         {
 
@@ -242,6 +261,59 @@ function generateMpROMS
     }
 }
 
+function renameTex
+{
+    $isTargetRom = isTargetRomCheck
+    
+    #OPEN ROM
+    $FileBrowser.Filter = 'N64 ROM (*.z64)|*.z64'
+    Write-Output "`nSelect $romname ROM!"
+
+    while($isTargetRom -eq 0)
+    {
+        if ($FileBrowser.ShowDialog() -ne "Cancel") 
+        {
+            #READ FILE WHOLE/RAW
+            Write-Output "Reading ROM..."
+            $global:file = Get-Content $FileBrowser.FileName -Encoding Byte -Raw
+
+            #CHECK ROM
+            $isTargetRom = isTargetRomCheck
+
+            if ($isTargetRom -eq 0)
+            {
+                Write-Output "Selected ROM is not $romname!`n" | useColor Red
+            }
+            else
+            {
+                $targetRom_Path = $FileBrowser.FileName
+                $internalRomName = getFullInternalRomName
+            }
+        } 
+    }
+
+    #OPEN TEX DIRECTORY
+    Write-Output "`nSelect HD Texture Folder!"
+
+    while(1)
+    {
+        if ($FolderBrowser.ShowDialog() -ne "Cancel") 
+        {
+            $textures_Path = $FolderBrowser.SelectedPath
+            Write-Output "Path set"
+            break
+        } 
+    }
+
+    #FIND FILES
+    Write-Output "Getting and renaming hundreds of files... This may take a while..."
+    Get-ChildItem -Recurse -Path $textures_Path -include ('*.png') -Filter “*MARIOKART64*” | 
+    #RENAME FILES
+    Rename-Item -NewName {$_.name -replace ‘MARIOKART64’,"$internalRomName" }
+
+    Write-Output "`nTextures successfully renamed :)" | useColor Green
+}
+
 function showMenu
 {
     Write-Output $script_header
@@ -249,7 +321,9 @@ function showMenu
     Write-Output "`nWhat do you want to do?`n
     1: Patch ROM + generate Multiplayer ROMS
     2: Patch ROM
-    3: Generate Multiplayer ROMS (needs patched ROM)"
+    3: Generate Multiplayer ROMS (needs patched ROM)
+    4: Rename MK64 HD Textures
+    "
 
     $choice = Read-Host -Prompt "`nChoose"
 
@@ -258,7 +332,8 @@ function showMenu
         1 {patchROM 
            generateMpROMS}                        
         2 {patchROM}                        
-        3 {generateMpROMS}                                                
+        3 {generateMpROMS}    
+        4 {renameTex}                                             
         Default {"`nWrong choice! Try again!" | useColor Red}                        
     }    
 }
