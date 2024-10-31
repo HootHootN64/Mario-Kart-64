@@ -4,8 +4,9 @@ Add-Type -AssemblyName System.Windows.Forms
 # ADJUST ROM #
 ##############
 
+$gamename = "Mario Kart 64" #ORIGINAL GAME NAME
 $romname = "MK64-HootingTime" #YOUR ROM NAME WITHOUT VERSION
-$example_version = "1.40" #VERSION EXAMPLE (ONLY RELEVANT FOR MAX LENGTH CHECK)
+$example_version = "1.43" #VERSION EXAMPLE (ONLY RELEVANT FOR MAX LENGTH CHECK)
     
 $romhash = "579c48e211ae952530ffc8738709f078d5dd215e" #MK64 EXAMPLE SHA-1
 
@@ -85,8 +86,6 @@ function isTargetRomCheck
             $string += [char]$global:file[$offsetName + $i]
         }
 
-        #$romname -eq $string
-
         if ($romname -eq $string)
         {
             return 1
@@ -137,23 +136,27 @@ function patchROM
     {
         if ($FileBrowser.ShowDialog() -ne "Cancel") 
         {
-            $patch_Path = $FileBrowser.FileName #Split-Path -Parent $FileBrowser.FileName
+            $patch_Path = $FileBrowser.FileName
             $FileBrowser.SafeFileName -match '^[\w]*'
             $patch_Name = $matches[0]  
+
+            $patch_Path
             break
         } 
     }
 
     #OPEN ORIGINAL ROM
     $FileBrowser.Filter = 'N64 ROM (*.z64)|*.z64'
-    Write-Output "`nSelect $romname original ROM..."
+    Write-Output "`nSelect $gamename original ROM..."
 
     while(1)
     {
         if ($FileBrowser.ShowDialog() -ne "Cancel") 
         {
             $sourceRom_Path = $FileBrowser.FileName
-            $FileHash = Get-FileHash -Algorithm SHA1 $sourceRom_Path
+            $FileHash = Get-FileHash -Algorithm SHA1 -LiteralPath $sourceRom_Path
+
+            $sourceRom_Path
 
             if ($FileHash.Hash -eq $romhash)
             {
@@ -161,7 +164,7 @@ function patchROM
             }
             else
             {
-                Write-Output "Wrong ROM!" | useColor Red
+                Write-Output "Wrong ROM! SHA-1 of your ROM is $FileHash.Hash" | useColor Red
                 Write-Output $script_wrongRom 
             } 
         } 
@@ -171,17 +174,32 @@ function patchROM
     Write-Output "True"
     Write-Output "`nCreating $romname ROM..."
     $targetRom_Path = "$PSScriptRoot\$patch_Name.z64"
+
+    #CHECK PATHS
+    Write-Output "Path overview:"
+    Write-Output "Patch:"
+    $patch_Path = "`"" + $patch_Path + "`""
+    $patch_Path 
+    Write-Output "Source:"
+    $sourceRom_Path = "`"" + $sourceRom_Path + "`""
+    $sourceRom_Path
+    Write-Output "Target:"
+    $targetRom_Path2 = $targetRom_Path
+    $targetRom_Path = "`"" + $targetRom_Path + "`""
+    $targetRom_Path
+
     cmd.exe /c "Flips\flips --apply $patch_Path $sourceRom_Path $targetRom_Path"
 
     #RENAME ROM
-    $global:file = Get-Content $targetRom_Path -Encoding Byte -Raw
+    $global:file = Get-Content "$targetRom_Path2" -Encoding Byte -Raw
 
     if (isTargetRomCheck)
     {
         Write-Output "`nRenaming $romname ROM..."
         $version = getTargetRomVersion
-        Rename-Item -Path $targetRom_Path -NewName "$romname($version).z64"
-        $targetRom_Path = "$PSScriptRoot\$romname($version).z64"
+        Rename-Item -Path "$targetRom_Path2" -NewName "$romname($version).z64"
+        $targetRom_Path = "`"" + "$PSScriptRoot\$romname($version).z64" + "`""
+        $targetRom_Path
 
         Write-Output "`n$romname successfully patched :)" | useColor Green
     }
@@ -307,7 +325,7 @@ function renameTex
 
     #FIND FILES
     Write-Output "Getting and renaming hundreds of files... This may take a while..."
-    Get-ChildItem -Recurse -Path $textures_Path -include ('*.png') -Filter “*MARIOKART64*” | 
+    Get-ChildItem -Recurse -Path "$textures_Path" -include ('*.png') -Filter “*MARIOKART64*” | 
     #RENAME FILES
     Rename-Item -NewName {$_.name -replace ‘MARIOKART64’,"$internalRomName" }
 
@@ -322,7 +340,7 @@ function showMenu
     1: Patch ROM + generate Multiplayer ROMS
     2: Patch ROM
     3: Generate Multiplayer ROMS (needs patched ROM)
-    4: Rename MK64 HD Textures
+    4: Rename MK64 HD Textures (needs patched ROM)
     "
 
     $choice = Read-Host -Prompt "`nChoose"
